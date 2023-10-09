@@ -26,7 +26,9 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = bool(os.getenv('DEBUG', 0))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['www.eugenevrtx.pythonanywhere.com',
+                 'eugenevrtx.pythonanywhere.com',
+                 ]
 
 # Application definition
 
