@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app/
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: files_celery
+    env_file: .env
+    command: celery -A files_api.celery worker -l INFO
+    depends_on:
+      - redis
+      - django
+    volumes:
+      - ./app:/app/
+
+  redis:
+    image: redis:7.2.1-alpine
+    container_name: files_redis
+    ports:
+      - "6379:6379"
+
+  migrations:
+    build: .
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python /app/manage.py migrate
+
+  postgres:
+    image: postgres:15.4-alpine
+    container_name: files_db
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    healthcheck:
+      test: pg_isready -U ${DB_USER} -d ${DB_NAME}
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
